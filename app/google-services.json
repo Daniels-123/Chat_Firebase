@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "480662649949",
+    "firebase_url": "https://chat-firebase-7b7ff.firebaseio.com",
+    "project_id": "chat-firebase-7b7ff",
+    "storage_bucket": "chat-firebase-7b7ff.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:480662649949:android:c8733d462673a0bccda1b4",
+        "android_client_info": {
+          "package_name": "com.dybcatering.chatfirebase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "480662649949-2fitng2hb3d8di5eii6k9l9jrmiaojde.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dybcatering.chatfirebase",
+            "certificate_hash": "34383232bcf8ad49d1946fcbce2ea8944ad64e91"
+          }
+        },
+        {
+          "client_id": "480662649949-0st51vj68p4tl17kpqetl0bp1rcli870.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGql6akOI1unR9bbv70Stu-Iaa80iA8Gg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "480662649949-0st51vj68p4tl17kpqetl0bp1rcli870.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
