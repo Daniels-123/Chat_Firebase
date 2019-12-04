@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 
 import com.dybcatering.chatfirebase.Adapter.UserAdapter;
 import com.dybcatering.chatfirebase.Model.Chat;
+import com.dybcatering.chatfirebase.Model.Chatlist;
 import com.dybcatering.chatfirebase.Model.User;
 import com.dybcatering.chatfirebase.R;
 import com.google.firebase.auth.FirebaseAuth;
@@ -39,7 +40,7 @@ public class ChatsFragment extends Fragment {
     FirebaseUser firebaseUser;
     DatabaseReference  reference;
 
-    private List<String> userList;
+    private List<Chatlist> userList;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -54,8 +55,27 @@ public class ChatsFragment extends Fragment {
 
         userList = new ArrayList<>();
 
-        reference = FirebaseDatabase.getInstance().getReference("Chats");
+        reference = FirebaseDatabase.getInstance().getReference("Chatlist").child(firebaseUser.getUid());
         reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                userList.clear();
+
+                for (DataSnapshot snapshot: dataSnapshot.getChildren()){
+                    Chatlist chatlist = snapshot.getValue(Chatlist.class);
+                    userList.add(chatlist);
+                }
+                chatList();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+       // reference = FirebaseDatabase.getInstance().getReference("Chats");
+ /*       reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 userList.clear();
@@ -71,49 +91,36 @@ public class ChatsFragment extends Fragment {
                     }
                 }
 
-                readChats();
 
-                userAdapter = new UserAdapter(getContext(), mUsers, true);
-                recyclerView.setAdapter(userAdapter);
+
+               // userAdapter = new UserAdapter(getContext(), mUsers, true);
+             //   recyclerView.setAdapter(userAdapter);
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
-        });
+        });*/
 
         return view;
     }
 
-    private void readChats(){
+    private void chatList() {
         mUsers = new ArrayList<>();
-
-        reference = FirebaseDatabase.getInstance().getReference("Users");
-
+        reference =  FirebaseDatabase.getInstance().getReference("Users");
         reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 mUsers.clear();
-
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()){
-                    User user  = snapshot.getValue(User.class);
-
-                    for (String id : userList){
-                        if (user.getId().equals(id)){
-                            if (mUsers.size() !=0){
-                                for (User user1 : mUsers){
-                                    if (!user.getId().equals(user1.getId())){
-                                        mUsers.add(user);
-                                    }
-                                }
-                            } else{
-                                    mUsers.add(user);
-                            }
+                for (DataSnapshot snapshot :    dataSnapshot.getChildren()){
+                    User user =  snapshot.getValue(User.class);
+                    for (Chatlist chatlist: userList){
+                        if (user.getId().equals(chatlist.getId())){
+                            mUsers.add(user);
                         }
                     }
                 }
-
                 userAdapter = new UserAdapter(getContext(), mUsers, true);
                 recyclerView.setAdapter(userAdapter);
             }
@@ -124,5 +131,6 @@ public class ChatsFragment extends Fragment {
             }
         });
     }
+
 
 }
