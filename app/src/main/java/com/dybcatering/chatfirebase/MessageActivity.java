@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
@@ -17,14 +18,21 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.dybcatering.chatfirebase.Adapter.MessageAdapter;
+import com.dybcatering.chatfirebase.Fragments.APIService;
 import com.dybcatering.chatfirebase.Model.Chat;
 import com.dybcatering.chatfirebase.Model.User;
+import com.dybcatering.chatfirebase.Notifications.Client;
+import com.dybcatering.chatfirebase.Notifications.Data;
+import com.dybcatering.chatfirebase.Notifications.MyResponse;
+import com.dybcatering.chatfirebase.Notifications.Sender;
+import com.dybcatering.chatfirebase.Notifications.Token;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -32,6 +40,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MessageActivity extends AppCompatActivity {
 
@@ -53,6 +64,10 @@ public class MessageActivity extends AppCompatActivity {
 
 	ValueEventListener seenListener;
 
+	APIService apiService;
+
+	boolean notify = false;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -68,6 +83,10 @@ public class MessageActivity extends AppCompatActivity {
 				startActivity(new Intent(MessageActivity.this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
 			}
 		});
+
+
+		apiService = Client.getClient("https://fcm.googleapis.com/").create(APIService.class);
+
 
 		recyclerView = findViewById(R.id.recycler_view);
 		recyclerView.setHasFixedSize(true);
@@ -89,6 +108,7 @@ public class MessageActivity extends AppCompatActivity {
 		btn_send.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				notify = true;
 				String msg = text_send.getText().toString();
 				if (!msg.equals("")){
 					sendMessage(firebaseUser.getUid(), userId, msg);
@@ -146,7 +166,7 @@ public class MessageActivity extends AppCompatActivity {
 		});
 	}
 
-	private void sendMessage(String sender, String receiver, String message){
+	private void sendMessage(String sender, final String receiver, String message){
 
 		DatabaseReference reference = FirebaseDatabase.getInstance().getReference();
 		final String userId = intent.getStringExtra("userid");
@@ -169,6 +189,70 @@ public class MessageActivity extends AppCompatActivity {
 			public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 				if (!dataSnapshot.exists()){
 					chatRef.child("id").setValue(userId);
+				}
+			}
+
+			@Override
+			public void onCancelled(@NonNull DatabaseError databaseError) {
+
+			}
+		});
+
+
+		final String msg = 	message;
+
+
+		reference = FirebaseDatabase.getInstance().getReference("Users").child(firebaseUser.getUid());
+		reference.addValueEventListener(new ValueEventListener() {
+			@Override
+			public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+				User user = dataSnapshot.getValue(User.class);
+				if (notify){
+
+					sendNotification(receiver, user.getUsername(), msg);
+				}
+				notify = false;
+			}
+
+			@Override
+			public void onCancelled(@NonNull DatabaseError databaseError) {
+
+			}
+		});
+
+	}
+
+
+	private void sendNotification(String receiver, final String username, final String message){
+		final String userId = intent.getStringExtra("userid");
+		DatabaseReference tokens = FirebaseDatabase.getInstance().getReference("Tokens");
+		Query query = tokens.orderByKey().equalTo(receiver);
+		query.addValueEventListener(new ValueEventListener() {
+			@Override
+			public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+				for (DataSnapshot dataSnapshot1 : dataSnapshot.getChildren()){
+					Token token = dataSnapshot1.getValue(Token.class);
+					Data data = new Data(firebaseUser.getUid(), R.mipmap.ic_launcher, username+": "+ message, "Nuevo Mensaje"
+											, userId);
+
+					Sender sender = new Sender(data, token.getToken());
+
+					apiService.sendNotification(sender)
+							.enqueue(new Callback<MyResponse>() {
+								@Override
+								public void onResponse(Call<MyResponse> call, Response<MyResponse> response) {
+										if (response.code() == 200){
+											if (response.body().success != 1){
+												Toast.makeText(MessageActivity.this, "Algo falló", Toast.LENGTH_SHORT).show();
+											}
+										}
+								}
+
+								@Override
+								public void onFailure(Call<MyResponse> call, Throwable t) {
+
+								}
+							});
 				}
 			}
 
@@ -209,6 +293,13 @@ public class MessageActivity extends AppCompatActivity {
 	}
 
 
+	private void currentUser(String userid){
+		SharedPreferences.Editor editor = getSharedPreferences("PREFS", MODE_PRIVATE).edit();
+		editor.putString("currentuser", userid);
+		editor.apply();
+	}
+
+
 	private void status(String status){
 
 		databaseReference = FirebaseDatabase.getInstance().getReference("Users").child(firebaseUser.getUid());
@@ -224,6 +315,8 @@ public class MessageActivity extends AppCompatActivity {
 	protected void onResume() {
 		super.onResume();
 		status("Conectado");
+		final String userId = intent.getStringExtra("userid");
+		currentUser(userId);
 	}
 
 	@Override
@@ -231,5 +324,6 @@ public class MessageActivity extends AppCompatActivity {
 		super.onPause();
 		databaseReference.removeEventListener(seenListener);
 		status("Desconectado");
+		currentUser("none");
 	}
 }
