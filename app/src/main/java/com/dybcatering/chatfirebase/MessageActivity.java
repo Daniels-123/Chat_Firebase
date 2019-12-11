@@ -104,6 +104,13 @@ public class MessageActivity extends AppCompatActivity {
 		firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
 
 
+		username.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+
+			}
+		});
+
 
 		btn_send.setOnClickListener(new View.OnClickListener() {
 			@Override
